@@ -75,7 +75,7 @@ async function main() {
     const subscription = client.subscribe(
       [EventType.PLAYERS, EventType.COMMANDS],
       {
-        pollInterval: 1000,
+        pollInterval: 2000,
         logErrors: true,
       }
     );
@@ -294,7 +294,7 @@ const status = await client.getServerStatus();
 const subscription = client.subscribe(
   [EventType.PLAYERS, EventType.COMMANDS, EventType.KILLS],
   {
-    pollInterval: 1000,
+    pollInterval: 2000,
     retryOnError: true,
     logErrors: true,
     errorHandler: (err) => {
@@ -325,7 +325,7 @@ Note: `bufferSize`, `batchEvents`, `batchWindow`, and `timeFormat` are present i
 
 ```javascript
 const config = {
-  pollInterval: 1000, // Poll every second
+  pollInterval: 2000, // Poll every 2 seconds
   retryOnError: true, // Retry on errors
   retryInterval: 5000, // Retry after 5 seconds
   logErrors: true, // Log errors to console
@@ -344,7 +344,7 @@ const subscription = client.subscribeWithConfig(
 
 ```javascript
 const config = {
-  pollInterval: 1000,
+  pollInterval: 2000,
   filterFunc: (event) => {
     switch (event.type) {
       case EventType.PLAYERS:
@@ -425,6 +425,8 @@ try {
   }
 }
 ```
+
+    Note: using Redis requires the `redis` package to be installed (for example: `pnpm add redis`). The client will throw a helpful error if Redis is configured but the dependency is missing.
 
 ### Common Error Codes
 
