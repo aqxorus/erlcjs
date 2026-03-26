@@ -56,11 +56,13 @@ async function main() {
   const client = newClient('your-api-key', {
     timeout: 15000,
     baseURL: 'https://api.policeroleplay.community/v1',
+    baseURL2: 'https://api.policeroleplay.community/v2',
   });
 
   try {
     // Get current players
-    const players = await client.getPlayers();
+    const playerData = await client.getServer({ Players: true });
+    const players = playerData.Players || [];
     console.log('Current players:', players);
 
     // Execute a server command
@@ -68,7 +70,8 @@ async function main() {
     console.log('Command executed successfully');
 
     // Get command logs
-    const logs = await client.getCommandLogs();
+    const logData = await client.getServer({ CommandLogs: true });
+    const logs = logData.CommandLogs || [];
     console.log('Recent commands:', logs);
 
     // Real-time event subscription
@@ -118,6 +121,7 @@ main();
 const client = newClient('your-api-key', {
   timeout: 30000,
   baseURL: 'https://api.policeroleplay.community/v1',
+  baseURL2: 'https://api.policeroleplay.community/v2',
 });
 ```
 
@@ -170,6 +174,7 @@ const { createClient } = require('./src/API');
 const client = createClient('your-api-key', {
   timeout: 30000,
   baseURL: 'https://api.policeroleplay.community/v1',
+  baseURL2: 'https://api.policeroleplay.community/v2',
 
   // Optional: send an Authorization header in addition to Server-Key
   globalKey: 'your-global-key',
@@ -218,21 +223,23 @@ const client = newClientWithQueueAndCache(
 
 ## API Methods
 
-Most GET-style methods accept an optional `options` object:
+`getServer` accepts v2 include flags as the first argument and request options as the second argument:
 
 ```javascript
 // Disable cache for a single request
-const players = await client.getPlayers({ cache: false });
+const serverData = await client.getServer({ Players: true }, { cache: false });
+const players = serverData.Players || [];
 
 // Override cache TTL (ms) for a single request
-const server = await client.getServer({ cacheMaxAge: 5000 });
+const server = await client.getServer({}, { cacheMaxAge: 5000 });
 ```
 
-### Player Management
+### Server Data (v2)
 
 ```javascript
 // Get all players currently on the server
-const players = await client.getPlayers();
+const playerData = await client.getServer({ Players: true });
+const players = playerData.Players || [];
 ```
 
 ### Server Commands
@@ -248,23 +255,32 @@ await client.executeCommand(':ban PlayerName Reason');
 
 ```javascript
 // Command execution history
-const commandLogs = await client.getCommandLogs();
+const commandData = await client.getServer({ CommandLogs: true });
+const commandLogs = commandData.CommandLogs || [];
 
 // Moderation calls
-const modCalls = await client.getModCalls();
+const modData = await client.getServer({ ModCalls: true });
+const modCalls = modData.ModCalls || [];
 
 // Kill logs
-const killLogs = await client.getKillLogs();
+const killData = await client.getServer({ KillLogs: true });
+const killLogs = killData.KillLogs || [];
 
 // Join/leave logs
-const joinLogs = await client.getJoinLogs();
-```
+const joinData = await client.getServer({ JoinLogs: true });
+const joinLogs = joinData.JoinLogs || [];
 
-### Vehicle Management
-
-```javascript
-// Get all vehicles on the server
-const vehicles = await client.getVehicles();
+// Custom v2 include combinations
+const partialV2Data = await client.getServer({
+  Players: true,
+  Vehicles: true,
+  Staff: true,
+  JoinLogs: true,
+  Queue: true,
+  KillLogs: true,
+  CommandLogs: true,
+  ModCalls: true,
+});
 ```
 
 ### Server Information
@@ -274,13 +290,15 @@ const vehicles = await client.getVehicles();
 const serverInfo = await client.getServer();
 
 // Get server queue information
-const queueInfo = await client.getQueue();
+const queueData = await client.getServer({ Queue: true });
+const queueInfo = queueData.Queue || [];
 
 // Get ban information
 const banInfo = await client.getBans();
 
 // Get staff information
-const staff = await client.getStaff();
+const staffData = await client.getServer({ Staff: true });
+const staff = staffData.Staff || {};
 
 // Alias for getServer() (erlc.ts parity)
 const status = await client.getServerStatus();
@@ -370,7 +388,8 @@ const config = {
 const { getFriendlyErrorMessage } = require('./src/API');
 
 try {
-  const players = await client.getPlayers();
+  const data = await client.getServer({ Players: true });
+  const players = data.Players || [];
 } catch (error) {
   if (error.code) {
     switch (error.code) {
@@ -405,7 +424,7 @@ const {
 } = require('./src/API');
 
 try {
-  await client.getPlayers();
+  await client.getServer({ Players: true });
 } catch (error) {
   if (error instanceof PRCAPIError) {
     if (error.isRateLimit) {
@@ -542,7 +561,7 @@ await helpers.sendPM('PlayerName', 'Hello!');
 
 ```javascript
 try {
-  const result = await client.getPlayers();
+  const result = await client.getServer({ Players: true });
 } catch (error) {
   console.error('Error:', getFriendlyErrorMessage(error));
 }

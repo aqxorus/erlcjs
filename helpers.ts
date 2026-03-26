@@ -36,7 +36,8 @@ export class PRCHelpers {
   }
 
   async findPlayer(nameOrId: string): Promise<ERLCServerPlayer | null> {
-    const players = await this.client.getPlayers();
+    const data = await this.client.getServer({ Players: true });
+    const players = data?.Players || [];
     const lowerQuery = String(nameOrId || '').toLowerCase();
     if (!lowerQuery) return null;
 
@@ -50,7 +51,8 @@ export class PRCHelpers {
   }
 
   async getPlayersByTeam(team: string): Promise<ERLCServerPlayer[]> {
-    const players = await this.client.getPlayers();
+    const data = await this.client.getServer({ Players: true });
+    const players = data?.Players || [];
     const lowerTeam = String(team || '').toLowerCase();
     return players.filter(
       (p: ERLCServerPlayer) => String(p.Team || '').toLowerCase() === lowerTeam
@@ -58,7 +60,8 @@ export class PRCHelpers {
   }
 
   async getStaffPlayers(): Promise<ERLCServerPlayer[]> {
-    const players = await this.client.getPlayers();
+    const data = await this.client.getServer({ Players: true });
+    const players = data?.Players || [];
     return players.filter(
       (p: ERLCServerPlayer) => p.Permission && p.Permission !== 'Normal'
     );
@@ -96,12 +99,9 @@ export class PRCHelpers {
     await this.client.executeCommand(`:tp ${player} ${target}`);
   }
 
-  async setTeam(player: string, team: string): Promise<void> {
-    await this.client.executeCommand(`:team ${player} ${team}`);
-  }
-
   async getRecentJoins(minutes: number = 10): Promise<ERLCJoinLog[]> {
-    const logs = await this.client.getJoinLogs();
+    const data = await this.client.getServer({ JoinLogs: true });
+    const logs = data?.JoinLogs || [];
     const cutoff = Date.now() / 1000 - minutes * 60;
     return logs.filter(
       (log: ERLCJoinLog) => log.Join && log.Timestamp > cutoff
@@ -109,7 +109,8 @@ export class PRCHelpers {
   }
 
   async getRecentLeaves(minutes: number = 10): Promise<ERLCJoinLog[]> {
-    const logs = await this.client.getJoinLogs();
+    const data = await this.client.getServer({ JoinLogs: true });
+    const logs = data?.JoinLogs || [];
     const cutoff = Date.now() / 1000 - minutes * 60;
     return logs.filter(
       (log: ERLCJoinLog) => !log.Join && log.Timestamp > cutoff
@@ -120,7 +121,8 @@ export class PRCHelpers {
     player: string,
     hours: number = 1
   ): Promise<ERLCKillLog[]> {
-    const logs = await this.client.getKillLogs();
+    const data = await this.client.getServer({ KillLogs: true });
+    const logs = data?.KillLogs || [];
     const cutoff = Date.now() / 1000 - hours * 3600;
     const lowerPlayer = String(player || '').toLowerCase();
     return logs.filter(
@@ -135,7 +137,8 @@ export class PRCHelpers {
     player: string,
     hours: number = 1
   ): Promise<ERLCKillLog[]> {
-    const logs = await this.client.getKillLogs();
+    const data = await this.client.getServer({ KillLogs: true });
+    const logs = data?.KillLogs || [];
     const cutoff = Date.now() / 1000 - hours * 3600;
     const lowerPlayer = String(player || '').toLowerCase();
     return logs.filter(
@@ -150,7 +153,8 @@ export class PRCHelpers {
     player: string,
     hours: number = 1
   ): Promise<ERLCCommandLog[]> {
-    const logs = await this.client.getCommandLogs();
+    const data = await this.client.getServer({ CommandLogs: true });
+    const logs = data?.CommandLogs || [];
     const cutoff = Date.now() / 1000 - hours * 3600;
     const lowerPlayer = String(player || '').toLowerCase();
     return logs.filter(
@@ -162,7 +166,8 @@ export class PRCHelpers {
   }
 
   async getUnansweredModCalls(hours: number = 1): Promise<ERLCModCallLog[]> {
-    const logs = await this.client.getModCalls();
+    const data = await this.client.getServer({ ModCalls: true });
+    const logs = data?.ModCalls || [];
     const cutoff = Date.now() / 1000 - hours * 3600;
     return logs.filter(
       (log: ERLCModCallLog) => !log.Moderator && log.Timestamp > cutoff
@@ -260,14 +265,17 @@ export class PRCHelpers {
   async getServerStats(hours: number = 24): Promise<ServerStats> {
     const cutoff = Date.now() / 1000 - hours * 3600;
 
-    const [status, joinLogs, killLogs, commandLogs, modCalls] =
-      await Promise.all([
-        this.client.getServerStatus(),
-        this.client.getJoinLogs(),
-        this.client.getKillLogs(),
-        this.client.getCommandLogs(),
-        this.client.getModCalls(),
-      ]);
+    const status = await this.client.getServer({
+      JoinLogs: true,
+      KillLogs: true,
+      CommandLogs: true,
+      ModCalls: true,
+    });
+
+    const joinLogs = status.JoinLogs || [];
+    const killLogs = status.KillLogs || [];
+    const commandLogs = status.CommandLogs || [];
+    const modCalls = status.ModCalls || [];
 
     const recentJoins = joinLogs.filter(
       (log: ERLCJoinLog) => log.Join && log.Timestamp > cutoff

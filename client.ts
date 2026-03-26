@@ -1,20 +1,13 @@
 import * as Sentry from '@sentry/node';
-
 import { MemoryCache, RedisCache } from './cache.js';
 import { PRCAPIError } from './errors.js';
 import { RequestQueue } from './queue.js';
 import { RateLimiter } from './rateLimiter.js';
-import { Subscription } from './subscription.js';
 import {
   ClientOptions,
-  ERLCCommandLog,
-  ERLCJoinLog,
-  ERLCKillLog,
-  ERLCModCallLog,
-  ERLCServerPlayer,
-  ERLCVehicle,
-  EventConfig,
+  ERLCServerDataV2,
   MethodOptions,
+  V2ServerQueryOptions,
   getFriendlyErrorMessage,
 } from './types.js';
 
@@ -39,7 +32,8 @@ interface CacheStore {
 
 class ERLCClient {
   private apiKey: string;
-  private baseURL: string;
+  private baseURLV1: string;
+  private baseURLV2: string;
   private timeout: number;
   private keepAlive: boolean;
   private globalKey?: string;
@@ -58,7 +52,10 @@ class ERLCClient {
     }
 
     this.apiKey = apiKey;
-    this.baseURL = options.baseURL || 'https://api.policeroleplay.community/v1';
+    this.baseURLV1 =
+      options.baseURL || 'https://api.policeroleplay.community/v1';
+    this.baseURLV2 =
+      options.baseURL2 || 'https://api.policeroleplay.community/v2';
     this.timeout = options.timeout || 10000;
     this.keepAlive = options.keepAlive !== false;
     this.globalKey = options.globalKey;
@@ -96,75 +93,26 @@ class ERLCClient {
   }
 
   /**
-   * Get a list of players currently on the server
-   * @returns Array of players
-   */
-  async getPlayers(options?: MethodOptions): Promise<ERLCServerPlayer[]> {
-    return this.get('/server/players', options);
-  }
-
-  /**
    * Get current server status (erlc.ts parity)
    * @returns Server information
    */
   async getServerStatus(options?: MethodOptions): Promise<any> {
-    return this.getServer(options);
+    return this.getServer({}, options);
   }
 
   /**
-   * Get command execution history
-   * @returns Array of command logs
-   */
-  async getCommandLogs(options?: MethodOptions): Promise<ERLCCommandLog[]> {
-    return this.get('/server/commandlogs', options);
-  }
-
-  /**
-   * Get moderation call history
-   * @returns Array of mod call logs
-   */
-  async getModCalls(options?: MethodOptions): Promise<ERLCModCallLog[]> {
-    return this.get('/server/modcalls', options);
-  }
-
-  /**
-   * Get kill log history
-   * @returns Array of kill logs
-   */
-  async getKillLogs(options?: MethodOptions): Promise<ERLCKillLog[]> {
-    return this.get('/server/killlogs', options);
-  }
-
-  /**
-   * Get server join/leave history
-   * @returns Array of join logs
-   */
-  async getJoinLogs(options?: MethodOptions): Promise<ERLCJoinLog[]> {
-    return this.get('/server/joinlogs', options);
-  }
-
-  /**
-   * Get list of vehicles on the server
-   * @returns Array of vehicles
-   */
-  async getVehicles(options?: MethodOptions): Promise<ERLCVehicle[]> {
-    return this.get('/server/vehicles', options);
-  }
-
-  /**
-   * Get server information and player count
+   * Get server data from v2 endpoint
+   * @param query - v2 include flags
+   * @param options - Request options
    * @returns Server information
    */
-  async getServer(options?: MethodOptions): Promise<any> {
-    return this.get('/server', options);
-  }
-
-  /**
-   * Get server queue information
-   * @returns Queue information
-   */
-  async getQueue(options?: MethodOptions): Promise<any> {
-    return this.get('/server/queue', options);
+  async getServer(
+    query: V2ServerQueryOptions = {},
+    options?: MethodOptions
+  ): Promise<ERLCServerDataV2> {
+    const path = this.buildV2ServerPath(query);
+    const data = await this.get(path, options, 'v2');
+    return this.normalizeServerV2Data(data);
   }
 
   /**
@@ -172,15 +120,7 @@ class ERLCClient {
    * @returns Ban information
    */
   async getBans(options?: MethodOptions): Promise<any> {
-    return this.get('/server/bans', options);
-  }
-
-  /**
-   * Get server staff information
-   * @returns Staff information
-   */
-  async getStaff(options?: MethodOptions): Promise<any> {
-    return this.get('/server/staff', options);
+    return this.get('/server/bans', options, 'v1');
   }
 
   /**
@@ -189,34 +129,7 @@ class ERLCClient {
    */
   async executeCommand(command: string): Promise<void> {
     const data = { command };
-    return this.post('/server/command', data);
-  }
-
-  /**
-   * Subscribe to real-time events
-   * @param eventTypes - Array of event types to subscribe to
-   * @param config - Event configuration
-   * @returns Event subscription
-   */
-  subscribe(
-    eventTypes: string[],
-    config: Partial<EventConfig> = {}
-  ): Subscription {
-    const subscription = new Subscription(this, config, eventTypes);
-    return subscription;
-  }
-
-  /**
-   * Subscribe to real-time events with custom configuration
-   * @param config - Event configuration
-   * @param eventTypes - Array of event types to subscribe to
-   * @returns Event subscription
-   */
-  subscribeWithConfig(
-    config: Partial<EventConfig>,
-    ...eventTypes: string[]
-  ): Subscription {
-    return this.subscribe(eventTypes, config);
+    return this.post('/server/command', data, 'v2');
   }
 
   /**
@@ -225,8 +138,14 @@ class ERLCClient {
    * @param options - Request options
    * @returns Response data
    */
-  async get(path: string, options: MethodOptions = {}): Promise<any> {
-    const cacheKey = this.cache ? `${this.cache.prefix}${path}` : null;
+  async get(
+    path: string,
+    options: MethodOptions = {},
+    apiVersion: 'v1' | 'v2' = 'v2'
+  ): Promise<any> {
+    const cacheKey = this.cache
+      ? `${this.cache.prefix}${apiVersion}:${path}`
+      : null;
     const shouldCache = !!this.cache && options.cache !== false;
     const ttlOverride = Number(options.cacheMaxAge);
     const ttl =
@@ -254,15 +173,16 @@ class ERLCClient {
     }
 
     const execute = async () => {
-      const response = await this.makeRequest('GET', path);
+      const response = await this.makeRequest('GET', path, null, apiVersion);
 
       if (shouldCache && cacheKey && response.ok) {
         const data = await response.json();
+        const ttlMs = typeof ttl === 'number' ? ttl : 0;
         try {
           if (this.cache!.store instanceof MemoryCache) {
-            this.cache!.store.set(cacheKey, data, ttl);
+            this.cache!.store.set(cacheKey, data, ttlMs);
           } else {
-            await this.cache!.store.set(cacheKey, data, ttl);
+            await this.cache!.store.set(cacheKey, data, ttlMs);
           }
         } catch {}
         return data;
@@ -271,7 +191,7 @@ class ERLCClient {
       return this.handleResponse(response, {
         method: 'GET',
         path,
-        url: response?.url || `${this.baseURL}${path}`,
+        url: response?.url || `${this.resolveBaseURL(apiVersion)}${path}`,
       });
     };
 
@@ -293,13 +213,17 @@ class ERLCClient {
    * @param data - Request body data
    * @returns Response data
    */
-  async post(path: string, data: any): Promise<any> {
+  async post(
+    path: string,
+    data: any,
+    apiVersion: 'v1' | 'v2' = 'v2'
+  ): Promise<any> {
     const execute = async () => {
-      const response = await this.makeRequest('POST', path, data);
+      const response = await this.makeRequest('POST', path, data, apiVersion);
       return this.handleResponse(response, {
         method: 'POST',
         path,
-        url: response?.url || `${this.baseURL}${path}`,
+        url: response?.url || `${this.resolveBaseURL(apiVersion)}${path}`,
       });
     };
 
@@ -320,9 +244,10 @@ class ERLCClient {
   async makeRequest(
     method: string,
     path: string,
-    data: any = null
+    data: any = null,
+    apiVersion: 'v1' | 'v2' = 'v2'
   ): Promise<Response> {
-    return this.makeRequestWithRetry(method, path, data, 3);
+    return this.makeRequestWithRetry(method, path, data, apiVersion, 3);
   }
 
   /**
@@ -338,10 +263,11 @@ class ERLCClient {
     method: string,
     path: string,
     data: any = null,
+    apiVersion: 'v1' | 'v2' = 'v2',
     maxRetries = 3,
     baseDelay = 1000
   ): Promise<Response> {
-    const url = `${this.baseURL}${path}`;
+    const url = `${this.resolveBaseURL(apiVersion)}${path}`;
     let lastError: Error | undefined;
     const perAttemptTimeout = Math.max(2000, Number(this.timeout) || 0);
 
@@ -724,6 +650,43 @@ class ERLCClient {
    */
   sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  buildV2ServerPath(query: V2ServerQueryOptions = {}): string {
+    const params = new URLSearchParams();
+
+    const includeFlags: Array<keyof V2ServerQueryOptions> = [
+      'Players',
+      'Staff',
+      'JoinLogs',
+      'Queue',
+      'KillLogs',
+      'CommandLogs',
+      'ModCalls',
+      'EmergencyCalls',
+      'Vehicles',
+    ];
+
+    for (const key of includeFlags) {
+      if (query[key]) {
+        params.set(key, 'true');
+      }
+    }
+
+    const queryString = params.toString();
+    return queryString ? `/server?${queryString}` : '/server';
+  }
+
+  normalizeServerV2Data(data: ERLCServerDataV2): ERLCServerDataV2 {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid v2 server response payload');
+    }
+
+    return data;
+  }
+
+  resolveBaseURL(apiVersion: 'v1' | 'v2'): string {
+    return apiVersion === 'v1' ? this.baseURLV1 : this.baseURLV2;
   }
 
   /**

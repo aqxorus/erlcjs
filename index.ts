@@ -3,7 +3,6 @@ import { ErrorCode, EventType, isPrivateServerOfflineError } from './types.js';
 import { RateLimiter } from './rateLimiter.js';
 import { RequestQueue } from './queue.js';
 import { MemoryCache } from './cache.js';
-import { Subscription, getDefaultEventConfig } from './subscription.js';
 import { PRCAPIError } from './errors.js';
 import { PRCHelpers } from './helpers.js';
 import type { ClientOptions } from './types.js';
@@ -100,11 +99,9 @@ export {
   isPrivateServerOfflineError,
   EventType,
   ErrorCode,
-  getDefaultEventConfig,
   PRCAPIError,
   PRCHelpers,
   RateLimiter,
   RequestQueue,
   MemoryCache,
-  Subscription,
 };

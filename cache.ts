@@ -144,6 +144,7 @@ class MemoryCache {
     if (this.items.size === 0) return;
 
     const firstKey = this.items.keys().next().value;
+    if (typeof firstKey !== 'string') return;
     const item = this.items.get(firstKey);
 
     this.items.delete(firstKey);

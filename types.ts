@@ -3,6 +3,14 @@ export interface ERLCServerPlayer {
   Permission: string;
   Callsign: string;
   Team: string;
+  Location?: {
+    LocationX: number;
+    LocationZ: number;
+    PostalCode: string;
+    StreetName: string;
+    BuildingNumber: string;
+  };
+  WantedStars?: number;
 }
 
 export interface ERLCCommandLog {
@@ -13,7 +21,7 @@ export interface ERLCCommandLog {
 
 export interface ERLCModCallLog {
   Caller: string;
-  Moderator: string;
+  Moderator: string | null;
   Timestamp: number;
 }
 
@@ -30,9 +38,61 @@ export interface ERLCJoinLog {
 }
 
 export interface ERLCVehicle {
-  Texture: string;
+  Texture: string | null;
   Name: string;
   Owner: string;
+  Plate: string;
+  ColorHex: string;
+  ColorName: string;
+}
+
+export interface ERLCEmergencyCall {
+  Team: string;
+  Caller: number;
+  Players: number[];
+  Position: [number, number];
+  StartedAt: number;
+  CallNumber: number;
+  Description: string;
+  PositionDescriptor: string;
+}
+
+export interface ERLCStaffData {
+  Admins?: Record<string, string>;
+  Mods?: Record<string, string>;
+  Helpers?: Record<string, string>;
+}
+
+export interface ERLCServerDataV2 {
+  Name: string;
+  OwnerId: number;
+  CoOwnerIds: number[];
+  CurrentPlayers: number;
+  MaxPlayers: number;
+  JoinKey: string;
+  AccVerifiedReq: string;
+  TeamBalance: boolean;
+  Players?: ERLCServerPlayer[];
+  Staff?: ERLCStaffData;
+  JoinLogs?: ERLCJoinLog[];
+  Queue?: number[];
+  KillLogs?: ERLCKillLog[];
+  CommandLogs?: ERLCCommandLog[];
+  ModCalls?: ERLCModCallLog[];
+  EmergencyCalls?: ERLCEmergencyCall[];
+  Vehicles?: ERLCVehicle[];
+}
+
+export interface V2ServerQueryOptions {
+  Players?: boolean;
+  Staff?: boolean;
+  JoinLogs?: boolean;
+  Queue?: boolean;
+  KillLogs?: boolean;
+  CommandLogs?: boolean;
+  ModCalls?: boolean;
+  EmergencyCalls?: boolean;
+  Vehicles?: boolean;
 }
 
 export interface APIError {
@@ -61,6 +121,7 @@ export interface CacheConfig {
 export interface ClientOptions {
   timeout?: number;
   baseURL?: string;
+  baseURL2?: string;
   globalKey?: string;
   requestQueue?: RequestQueueConfig;
   cache?: CacheConfig;
