@@ -329,15 +329,18 @@ class ERLCClient {
           let bodyRetryAfterMs = 0;
           try {
             const cloned = response.clone();
-            const body = await cloned.json().catch(() => null);
+            const body: unknown = await cloned.json().catch(() => null);
             if (
               body &&
-              typeof body.retry_after === 'number' &&
-              body.retry_after > 0
+              typeof body === 'object' &&
+              'retry_after' in body &&
+              typeof (body as { retry_after?: unknown }).retry_after ===
+                'number' &&
+              (body as { retry_after: number }).retry_after > 0
             ) {
               bodyRetryAfterMs = Math.max(
                 0,
-                Math.round(body.retry_after * 1000)
+                Math.round((body as { retry_after: number }).retry_after * 1000)
               );
             }
           } catch {}
