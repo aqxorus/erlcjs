@@ -52,10 +52,8 @@ class ERLCClient {
     }
 
     this.apiKey = apiKey;
-    this.baseURLV1 =
-      options.baseURL || 'https://api.policeroleplay.community/v1';
-    this.baseURLV2 =
-      options.baseURL2 || 'https://api.policeroleplay.community/v2';
+    this.baseURLV1 = options.baseURL || 'https://api.erlc.gg/v1';
+    this.baseURLV2 = options.baseURL2 || 'https://api.erlc.gg/v2';
     this.timeout = options.timeout || 10000;
     this.keepAlive = options.keepAlive !== false;
     this.globalKey = options.globalKey;
