@@ -5,6 +5,7 @@ import { RequestQueue } from './queue.js';
 import { RateLimiter } from './rateLimiter.js';
 import {
   ClientOptions,
+  ERLCCommandResponse,
   ERLCServerDataV2,
   MethodOptions,
   V2ServerQueryOptions,
@@ -94,7 +95,7 @@ class ERLCClient {
    * Get current server status (erlc.ts parity)
    * @returns Server information
    */
-  async getServerStatus(options?: MethodOptions): Promise<any> {
+  async getServerStatus(options?: MethodOptions): Promise<ERLCServerDataV2> {
     return this.getServer({}, options);
   }
 
@@ -123,9 +124,9 @@ class ERLCClient {
 
   /**
    * Execute a server command
-   * @param command - The command to execute (with leading slash)
+   * @param command - The command to execute (with leading ':')
    */
-  async executeCommand(command: string): Promise<void> {
+  async executeCommand(command: string): Promise<ERLCCommandResponse> {
     const data = { command };
     return this.post('/server/command', data, 'v2');
   }
@@ -282,8 +283,9 @@ class ERLCClient {
         const options: RequestInit = {
           method,
           headers: {
-            'Server-Key': this.apiKey,
-            'Content-Type': 'application/json',
+            'server-key': this.apiKey,
+            Accept: 'application/json',
+            ...(method !== 'GET' ? { 'Content-Type': 'application/json' } : {}),
             ...(!this.keepAlive || attempt > 0 ? { Connection: 'close' } : {}),
             ...(this.globalKey ? { Authorization: this.globalKey } : {}),
           },

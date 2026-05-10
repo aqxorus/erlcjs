@@ -102,8 +102,8 @@ const { createClient } = require('./src/API');
 
 const client = createClient('your-server-key', {
   timeout: 30000,
-  baseURL: 'https://api.policeroleplay.community/v1',
-  baseURL2: 'https://api.policeroleplay.community/v2',
+  baseURL: 'https://api.erlc.gg/v1',
+  baseURL2: 'https://api.erlc.gg/v2',
   keepAlive: true,
   globalKey: 'optional-global-key',
   requestQueue: {

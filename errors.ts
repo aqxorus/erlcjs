@@ -45,6 +45,8 @@ export class PRCAPIError extends Error {
     const code = body?.code ?? body?.errorCode ?? 0;
     const message =
       body?.message ||
+      body?.error ||
+      body?.Error ||
       `HTTP ${response?.status || 0}: ${response?.statusText || 'Error'}`;
 
     let retryAfterMs: number | undefined;

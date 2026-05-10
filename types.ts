@@ -1,7 +1,7 @@
 export interface ERLCServerPlayer {
   Player: string;
   Permission: string;
-  Callsign: string;
+  Callsign: string | null;
   Team: string;
   Location?: {
     LocationX: number;
@@ -81,6 +81,10 @@ export interface ERLCServerDataV2 {
   ModCalls?: ERLCModCallLog[];
   EmergencyCalls?: ERLCEmergencyCall[];
   Vehicles?: ERLCVehicle[];
+}
+
+export interface ERLCCommandResponse {
+  message: string;
 }
 
 export interface V2ServerQueryOptions {
