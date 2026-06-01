@@ -92,15 +92,7 @@ class ERLCClient {
   }
 
   /**
-   * Get current server status (erlc.ts parity)
-   * @returns Server information
-   */
-  async getServerStatus(options?: MethodOptions): Promise<ERLCServerDataV2> {
-    return this.getServer({}, options);
-  }
-
-  /**
-   * Get server data from v2 endpoint
+   * Get server data from ERLC API
    * @param query - v2 include flags
    * @param options - Request options
    * @returns Server information
@@ -115,7 +107,7 @@ class ERLCClient {
   }
 
   /**
-   * Get server ban information
+   * Get server ban information (v1, no v2 yet)
    * @returns Ban information
    */
   async getBans(options?: MethodOptions): Promise<any> {
@@ -132,7 +124,7 @@ class ERLCClient {
   }
 
   /**
-   * Make a GET request to the API
+   * Make a GET request
    * @param path - API endpoint path
    * @param options - Request options
    * @returns Response data
