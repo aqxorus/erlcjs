@@ -4,7 +4,6 @@ import { RateLimiter } from './rateLimiter.js';
 import { RequestQueue } from './queue.js';
 import { MemoryCache } from './cache.js';
 import { PRCAPIError } from './errors.js';
-import { PRCHelpers } from './helpers.js';
 import type { ClientOptions } from './types.js';
 
 function newClient(apiKey: string, options: ClientOptions = {}): any {
@@ -100,7 +99,6 @@ export {
   EventType,
   ErrorCode,
   PRCAPIError,
-  PRCHelpers,
   RateLimiter,
   RequestQueue,
   MemoryCache,

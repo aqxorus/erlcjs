@@ -13,7 +13,6 @@ This README documents the current implementation in this folder.
 - Optional cache (in-memory or Redis)
 - Optional stale-if-error cache fallback
 - Structured API errors via `PRCAPIError`
-- Convenience utilities via `PRCHelpers`
 - Optional Sentry span + exception instrumentation
 
 ## Import
@@ -25,7 +24,6 @@ const {
   newClientWithQueue,
   newClientWithCache,
   newClientWithQueueAndCache,
-  PRCHelpers,
   PRCAPIError,
   ErrorCode,
   getFriendlyErrorMessage,
@@ -254,33 +252,6 @@ In-memory cache only:
 
 - `getCacheKeys()`
 - `getCacheEntry(key)`
-
-## `PRCHelpers`
-
-`PRCHelpers` wraps common operations.
-
-```javascript
-const { PRCHelpers } = require('./src/API');
-const helpers = new PRCHelpers(client);
-
-const player = await helpers.findPlayer('name-or-id');
-const staff = await helpers.getStaffPlayers();
-await helpers.sendPM('PlayerName', 'Hello');
-await helpers.kickPlayer('PlayerName', 'Reason');
-```
-
-Available helper methods include:
-
-- `findPlayer`, `getPlayersByTeam`, `getStaffPlayers`
-- `getOnlineCount`, `isServerFull`
-- `sendMessage`, `sendPM`, `kickPlayer`, `banPlayer`, `teleportPlayer`
-- `getRecentJoins`, `getRecentLeaves`
-- `getPlayerKills`, `getPlayerDeaths`, `getPlayerCommands`
-- `getUnansweredModCalls`
-- `waitForPlayer`, `waitForPlayerCount`
-- `formatPlayer`, `formatTimestamp`, `formatUptime`
-- `kickAllFromTeam`, `messageAllStaff`
-- `getServerStats`
 
 ## Notes
 
