@@ -1,5 +1,4 @@
 import { ErrorCode, isPrivateServerOfflineError } from './types.js';
-import type { APIError } from './types.js';
 
 export class PRCAPIError extends Error {
   code?: number;

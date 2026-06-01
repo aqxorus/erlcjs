@@ -236,7 +236,8 @@ class RedisCache {
         this.connectionState = 'error';
         this.lastError = err as Error;
         throw new Error(
-          "Redis cache configured but 'redis' dependency is not installed. Install it with `pnpm add redis`."
+          "Redis cache configured but 'redis' dependency is not installed. Install it with `pnpm add redis`.",
+          { cause: err }
         );
       }
 
